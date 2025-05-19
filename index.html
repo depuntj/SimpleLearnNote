@@ -1,0 +1,45 @@
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aplikasi Catatan</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <app-bar>
+        <span slot="title">Aplikasi Catatan</span>
+      </app-bar>
+    </header>
+
+    <main>
+      <note-form></note-form>
+
+      <section class="notes-container">
+        <div class="tabs">
+          <button class="tab active" id="active-tab" data-tab="active">
+            Catatan Aktif
+          </button>
+          <button class="tab" id="archived-tab" data-tab="archived">
+            Arsip
+          </button>
+        </div>
+
+        <div class="search-container">
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            class="search-input"
+            id="search-notes"
+            placeholder="Cari catatan..."
+          />
+        </div>
+
+        <div class="notes-grid" id="notes-list"></div>
+      </section>
+    </main>
+
+    <script src="component.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
