@@ -1,6 +1,8 @@
+// Import CSS and components
 import './style.css';
 import './component.js';
 
+// Import utilities
 import {
   formatDate,
   showLoading,
@@ -9,12 +11,17 @@ import {
   debounce,
 } from './utils.js';
 
+// API Base URL
 const API_BASE_URL = 'https://notes-api.dicoding.dev/v2';
+
+// Prevent multiple app instances
 let appInstance = null;
 
+// API functions with loading indicators
 const api = {
   cache: new Map(),
   requestAbortController: null,
+
   createAbortController() {
     if (this.requestAbortController) {
       this.requestAbortController.abort();
@@ -183,6 +190,7 @@ const api = {
   },
 };
 
+// Notes App Class with enhanced loading indicators
 class NotesApp {
   constructor() {
     if (appInstance) {
@@ -196,10 +204,12 @@ class NotesApp {
     this.archivedNotes = [];
     this.isLoading = false;
     this.isDestroyed = false;
+
     this.elements = {};
     this.timeouts = new Set();
     this.intervals = new Set();
 
+    // Bind methods
     this.handleNoteSubmit = this.handleNoteSubmit.bind(this);
     this.handleSearch = this.handleSearch.bind(this);
     this.handleTabClick = this.handleTabClick.bind(this);
@@ -220,39 +230,139 @@ class NotesApp {
     return timeoutId;
   }
 
-  safeSetInterval(callback, delay) {
-    const intervalId = setInterval(() => {
-      if (!this.isDestroyed) {
-        callback();
-      } else {
-        clearInterval(intervalId);
-        this.intervals.delete(intervalId);
-      }
-    }, delay);
-    this.intervals.add(intervalId);
-    return intervalId;
-  }
-
   async init() {
     try {
       if (this.isDestroyed) return;
 
-      hideLoading();
+      // Show initial loading for better UX
+      this.showAppLoading();
 
       this.cacheElements();
       this.setupEventListeners();
       this.updateTabCounts();
-      this.safeSetTimeout(() => {
+
+      // Load data with visible loading
+      this.safeSetTimeout(async () => {
         if (!this.isDestroyed) {
-          this.loadInitialData().catch((error) => {
+          try {
+            await this.loadInitialData();
+          } catch (error) {
             console.error('Failed to load initial data:', error);
             this.renderErrorState();
-          });
+          } finally {
+            this.hideAppLoading();
+          }
         }
-      }, 100);
+      }, 300); // Small delay to show loading
     } catch (error) {
       console.error('Error during app initialization:', error);
       this.handleCriticalError(error);
+    }
+  }
+
+  // Enhanced loading indicators
+  showAppLoading() {
+    try {
+      const loadingOverlay = document.getElementById('loading-indicator');
+      if (loadingOverlay) {
+        loadingOverlay.classList.remove('hidden');
+        loadingOverlay.style.display = 'flex';
+        loadingOverlay.style.opacity = '1';
+      }
+
+      // Also show inline loading in notes area
+      if (this.elements.notesList) {
+        this.showInlineLoading();
+      }
+    } catch (error) {
+      console.error('Error showing app loading:', error);
+    }
+  }
+
+  hideAppLoading() {
+    try {
+      const loadingOverlay = document.getElementById('loading-indicator');
+      if (loadingOverlay) {
+        loadingOverlay.style.opacity = '0';
+
+        this.safeSetTimeout(() => {
+          if (loadingOverlay) {
+            loadingOverlay.classList.add('hidden');
+            loadingOverlay.style.display = 'none';
+          }
+        }, 300);
+      }
+    } catch (error) {
+      console.error('Error hiding app loading:', error);
+    }
+  }
+
+  showInlineLoading() {
+    if (!this.elements.notesList || this.isDestroyed) return;
+
+    try {
+      this.elements.notesList.innerHTML = `
+        <div class="inline-loading" style="
+          grid-column: 1 / -1;
+          text-align: center;
+          padding: 60px 20px;
+          color: #667eea;
+          animation: fadeIn 0.3s ease;
+        ">
+          <div class="loading-spinner-container">
+            <div style="
+              width: 32px;
+              height: 32px;
+              border: 3px solid #e2e8f0;
+              border-top: 3px solid #667eea;
+              border-radius: 50%;
+              animation: spin 1s linear infinite;
+              margin: 0 auto 16px;
+            "></div>
+            <p style="font-size: 0.95rem; font-weight: 500; margin-bottom: 8px;">Memuat catatan...</p>
+            <p style="font-size: 0.8rem; opacity: 0.7;">Silakan tunggu sebentar</p>
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      console.error('Error showing inline loading:', error);
+    }
+  }
+
+  showButtonLoading(button, originalText) {
+    try {
+      if (!button) return;
+
+      button.disabled = true;
+      button.innerHTML = `
+        <span style="
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        ">
+          <span style="
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+          "></span>
+          Memproses...
+        </span>
+      `;
+
+      return {
+        restore: () => {
+          if (button) {
+            button.disabled = false;
+            button.innerHTML = originalText;
+          }
+        },
+      };
+    } catch (error) {
+      console.error('Error showing button loading:', error);
+      return { restore: () => {} };
     }
   }
 
@@ -265,6 +375,7 @@ class NotesApp {
         activeTab: document.getElementById('active-tab'),
         archivedTab: document.getElementById('archived-tab'),
       };
+
       if (!this.elements.notesList) {
         throw new Error('Required DOM elements not found');
       }
@@ -278,13 +389,24 @@ class NotesApp {
     if (this.isLoading || this.isDestroyed) return;
 
     this.isLoading = true;
-    this.showInlineLoading();
 
     try {
+      // Show loading toast
+      const loadingToastId = showToast(
+        '📥 Memuat catatan dari server...',
+        'info',
+        10000
+      );
+
       const [activeResult, archivedResult] = await Promise.allSettled([
         api.getAllNotes(),
         api.getArchivedNotes(),
       ]);
+
+      // Hide loading toast
+      const loadingToast = document.getElementById(`toast-${loadingToastId}`);
+      if (loadingToast) loadingToast.remove();
+
       if (this.isDestroyed) return;
 
       this.activeNotes =
@@ -297,14 +419,22 @@ class NotesApp {
         this.updateTabCounts();
       });
 
-      if (this.activeNotes.length > 0 || this.archivedNotes.length > 0) {
-        showToast('🎉 Catatan berhasil dimuat!', 'success', 2000);
+      // Show success feedback
+      const totalNotes = this.activeNotes.length + this.archivedNotes.length;
+      if (totalNotes > 0) {
+        showToast(`✅ ${totalNotes} catatan berhasil dimuat!`, 'success', 3000);
+      } else {
+        showToast(
+          '📝 Belum ada catatan. Buat catatan pertama Anda!',
+          'info',
+          3000
+        );
       }
     } catch (error) {
       if (!this.isDestroyed) {
         console.error('Error loading data:', error);
         this.renderErrorState();
-        showToast('❌ Gagal memuat catatan', 'error');
+        showToast('❌ Gagal memuat catatan dari server', 'error', 5000);
       }
     } finally {
       this.isLoading = false;
@@ -330,34 +460,6 @@ class NotesApp {
     }
   }
 
-  showInlineLoading() {
-    if (!this.elements.notesList || this.isDestroyed) return;
-
-    try {
-      this.elements.notesList.innerHTML = `
-        <div class="inline-loading" style="
-          grid-column: 1 / -1;
-          text-align: center;
-          padding: 40px;
-          color: #718096;
-        ">
-          <div style="
-            width: 24px;
-            height: 24px;
-            border: 2px solid #e2e8f0;
-            border-top: 2px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 12px;
-          "></div>
-          <p style="font-size: 0.9rem;">Memuat catatan...</p>
-        </div>
-      `;
-    } catch (error) {
-      console.error('Error showing loading:', error);
-    }
-  }
-
   renderErrorState() {
     if (!this.elements.notesList || this.isDestroyed) return;
 
@@ -366,22 +468,27 @@ class NotesApp {
         <div class="error-state" style="
           grid-column: 1 / -1;
           text-align: center;
-          padding: 40px 20px;
+          padding: 60px 20px;
           color: #f56565;
+          animation: fadeIn 0.3s ease;
         ">
-          <div style="font-size: 32px; margin-bottom: 12px;">⚠️</div>
-          <h3 style="margin-bottom: 6px; color: #2d3748; font-size: 1.1rem;">Gagal memuat catatan</h3>
-          <p style="color: #718096; margin-bottom: 16px; font-size: 0.9rem;">Terjadi kesalahan saat memuat data</p>
+          <div style="font-size: 48px; margin-bottom: 16px; animation: bounce 2s infinite;">⚠️</div>
+          <h3 style="margin-bottom: 8px; color: #2d3748; font-size: 1.2rem;">Gagal memuat catatan</h3>
+          <p style="color: #718096; margin-bottom: 20px; font-size: 0.9rem;">Terjadi kesalahan saat mengambil data dari server</p>
           <button onclick="window.location.reload()" style="
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
+            padding: 12px 24px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
             font-size: 0.9rem;
-          ">🔄 Muat Ulang</button>
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+          " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.3)'">
+            🔄 Muat Ulang Halaman
+          </button>
         </div>
       `;
     } catch (error) {
@@ -397,11 +504,11 @@ class NotesApp {
       const archivedCount = this.archivedNotes.length;
 
       if (this.elements.activeTab) {
-        this.elements.activeTab.innerHTML = `📝 Catatan Aktif <span style="background: rgba(255,255,255,0.2); padding: 1px 6px; border-radius: 10px; font-size: 0.75em; margin-left: 4px;">${activeCount}</span>`;
+        this.elements.activeTab.innerHTML = `📝 Catatan Aktif <span style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 10px; font-size: 0.75em; margin-left: 4px; font-weight: 600;">${activeCount}</span>`;
       }
 
       if (this.elements.archivedTab) {
-        this.elements.archivedTab.innerHTML = `📚 Arsip <span style="background: rgba(255,255,255,0.2); padding: 1px 6px; border-radius: 10px; font-size: 0.75em; margin-left: 4px;">${archivedCount}</span>`;
+        this.elements.archivedTab.innerHTML = `📚 Arsip <span style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 10px; font-size: 0.75em; margin-left: 4px; font-weight: 600;">${archivedCount}</span>`;
       }
     } catch (error) {
       console.error('Error updating tab counts:', error);
@@ -440,6 +547,7 @@ class NotesApp {
         this.renderEmptyState();
         return;
       }
+
       const maxNotes = 50;
       const notesToRender = filteredNotes.slice(0, maxNotes);
 
@@ -453,6 +561,7 @@ class NotesApp {
       });
 
       this.elements.notesList.appendChild(fragment);
+
       if (filteredNotes.length > maxNotes) {
         const moreMessage = document.createElement('div');
         moreMessage.style.cssText = `
@@ -461,8 +570,18 @@ class NotesApp {
           padding: 20px;
           color: #718096;
           font-style: italic;
+          background: rgba(255,255,255,0.5);
+          border-radius: 8px;
+          margin-top: 10px;
         `;
-        moreMessage.textContent = `Menampilkan ${maxNotes} dari ${filteredNotes.length} catatan`;
+        moreMessage.innerHTML = `
+          <p style="margin: 0; font-size: 0.9rem;">
+            📄 Menampilkan ${maxNotes} dari ${filteredNotes.length} catatan
+          </p>
+          <p style="margin: 8px 0 0 0; font-size: 0.8rem; opacity: 0.8;">
+            Gunakan pencarian untuk menemukan catatan spesifik
+          </p>
+        `;
         this.elements.notesList.appendChild(moreMessage);
       }
     } catch (error) {
@@ -477,17 +596,33 @@ class NotesApp {
     try {
       const emptyMessage = document.createElement('div');
       emptyMessage.className = 'empty-message';
+      emptyMessage.style.animation = 'fadeIn 0.3s ease';
 
       if (this.currentSearch) {
         emptyMessage.innerHTML = `
-          <p>🔍 Tidak ada catatan yang cocok dengan pencarian "<strong>${this.currentSearch}</strong>"</p>
-          <p style="font-size: 0.85rem;">Coba gunakan kata kunci yang berbeda.</p>
+          <div style="text-align: center; padding: 40px;">
+            <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+            <h3 style="margin-bottom: 8px; color: #4a5568;">Pencarian tidak ditemukan</h3>
+            <p style="margin-bottom: 16px; color: #718096;">Tidak ada catatan yang cocok dengan "<strong>${this.currentSearch}</strong>"</p>
+            <button onclick="document.getElementById('search-notes').value=''; document.getElementById('search-notes').dispatchEvent(new Event('input'))" style="
+              background: #667eea;
+              color: white;
+              border: none;
+              padding: 8px 16px;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 0.85rem;
+            ">✨ Hapus Pencarian</button>
+          </div>
         `;
       } else {
         const isArchived = this.activeTab === 'archived';
         emptyMessage.innerHTML = `
-          <p>${isArchived ? '📚' : '📝'} Belum ada ${isArchived ? 'catatan diarsipkan' : 'catatan aktif'}</p>
-          <p style="font-size: 0.85rem;">${isArchived ? 'Arsipkan catatan untuk menyimpannya di sini.' : 'Buat catatan pertama Anda sekarang!'}</p>
+          <div style="text-align: center; padding: 40px;">
+            <div style="font-size: 48px; margin-bottom: 16px; animation: bounce 2s infinite;">${isArchived ? '📚' : '📝'}</div>
+            <h3 style="margin-bottom: 8px; color: #4a5568;">${isArchived ? 'Belum ada catatan diarsipkan' : 'Belum ada catatan aktif'}</h3>
+            <p style="color: #718096; font-size: 0.9rem;">${isArchived ? 'Arsipkan catatan untuk menyimpannya di sini.' : 'Buat catatan pertama Anda sekarang!'}</p>
+          </div>
         `;
       }
 
@@ -543,6 +678,7 @@ class NotesApp {
     }
   }
 
+  // Event handlers with loading indicators
   handleNoteSubmit(event) {
     try {
       const { title, body } = event.detail;
@@ -558,6 +694,10 @@ class NotesApp {
   handleSearch(event) {
     try {
       if (!this.isDestroyed) {
+        // Show search loading for long queries
+        if (event.target.value.length > 2) {
+          showToast('🔍 Mencari catatan...', 'info', 1000);
+        }
         this.searchNotes(event.target.value);
       }
     } catch (error) {
@@ -569,6 +709,8 @@ class NotesApp {
     try {
       const tabName = event.target.getAttribute('data-tab');
       if (tabName && !this.isDestroyed) {
+        // Show loading feedback for tab switch
+        showToast('🔄 Memuat tab...', 'info', 500);
         this.switchTab(tabName);
       }
     } catch (error) {
@@ -585,10 +727,10 @@ class NotesApp {
       const id = button.dataset.id;
 
       if (action === 'delete') {
-        this.deleteNote(id);
+        this.deleteNote(id, button);
       } else if (action === 'toggle-archive') {
         const shouldArchive = button.dataset.shouldArchive === 'true';
-        this.toggleArchiveNote(id, shouldArchive);
+        this.toggleArchiveNote(id, shouldArchive, button);
       }
     } catch (error) {
       console.error('Error handling button click:', error);
@@ -601,8 +743,20 @@ class NotesApp {
 
     this.isLoading = true;
 
+    // Show loading toast
+    const loadingToastId = showToast(
+      '💾 Menyimpan catatan baru...',
+      'info',
+      10000
+    );
+
     try {
       const newNote = await api.createNote(title, body);
+
+      // Hide loading toast
+      const loadingToast = document.getElementById(`toast-${loadingToastId}`);
+      if (loadingToast) loadingToast.remove();
+
       if (newNote && !this.isDestroyed) {
         this.activeNotes.unshift(newNote);
 
@@ -611,33 +765,56 @@ class NotesApp {
           this.updateTabCounts();
         });
 
-        showToast('✅ Catatan berhasil ditambahkan!', 'success');
+        showToast('✅ Catatan berhasil ditambahkan!', 'success', 3000);
 
         if (this.activeTab !== 'active') {
           this.switchTab('active');
         }
       }
     } catch (error) {
+      // Hide loading toast
+      const loadingToast = document.getElementById(`toast-${loadingToastId}`);
+      if (loadingToast) loadingToast.remove();
+
       if (!this.isDestroyed) {
         console.error('Error adding note:', error);
-        showToast('❌ Gagal menambah catatan', 'error');
+        showToast('❌ Gagal menyimpan catatan', 'error', 5000);
       }
     } finally {
       this.isLoading = false;
     }
   }
 
-  async deleteNote(id) {
+  async deleteNote(id, button) {
     if (this.isLoading || this.isDestroyed) return;
 
     try {
       const confirmMessage =
-        '🗑️ Apakah Anda yakin ingin menghapus catatan ini?';
+        '🗑️ Apakah Anda yakin ingin menghapus catatan ini?\n\nCatatan yang dihapus tidak dapat dikembalikan.';
       if (!confirm(confirmMessage)) return;
 
       this.isLoading = true;
 
+      // Show button loading
+      const originalText = button ? button.innerHTML : '';
+      const buttonLoader = button
+        ? this.showButtonLoading(button, originalText)
+        : { restore: () => {} };
+
+      // Show toast loading
+      const loadingToastId = showToast(
+        '🗑️ Menghapus catatan...',
+        'info',
+        10000
+      );
+
       const success = await api.deleteNote(id);
+
+      // Hide loading
+      const loadingToast = document.getElementById(`toast-${loadingToastId}`);
+      if (loadingToast) loadingToast.remove();
+      buttonLoader.restore();
+
       if (success && !this.isDestroyed) {
         this.activeNotes = this.activeNotes.filter((note) => note.id !== id);
         this.archivedNotes = this.archivedNotes.filter(
@@ -649,27 +826,46 @@ class NotesApp {
           this.updateTabCounts();
         });
 
-        showToast('🗑️ Catatan berhasil dihapus!', 'success');
+        showToast('🗑️ Catatan berhasil dihapus!', 'success', 3000);
       }
     } catch (error) {
       if (!this.isDestroyed) {
         console.error('Error deleting note:', error);
-        showToast('❌ Gagal menghapus catatan', 'error');
+        showToast('❌ Gagal menghapus catatan', 'error', 5000);
       }
     } finally {
       this.isLoading = false;
     }
   }
 
-  async toggleArchiveNote(id, shouldArchive) {
+  async toggleArchiveNote(id, shouldArchive, button) {
     if (this.isLoading || this.isDestroyed) return;
 
     this.isLoading = true;
 
     try {
+      // Show button loading
+      const originalText = button ? button.innerHTML : '';
+      const buttonLoader = button
+        ? this.showButtonLoading(button, originalText)
+        : { restore: () => {} };
+
+      // Show toast loading
+      const action = shouldArchive ? 'Mengarsipkan' : 'Memindahkan';
+      const loadingToastId = showToast(
+        `📦 ${action} catatan...`,
+        'info',
+        10000
+      );
+
       const success = shouldArchive
         ? await api.archiveNote(id)
         : await api.unarchiveNote(id);
+
+      // Hide loading
+      const loadingToast = document.getElementById(`toast-${loadingToastId}`);
+      if (loadingToast) loadingToast.remove();
+      buttonLoader.restore();
 
       if (success && !this.isDestroyed) {
         if (shouldArchive) {
@@ -700,12 +896,12 @@ class NotesApp {
         const message = shouldArchive
           ? '📥 Catatan berhasil diarsipkan!'
           : '📤 Catatan berhasil dipindahkan!';
-        showToast(message, 'success');
+        showToast(message, 'success', 3000);
       }
     } catch (error) {
       if (!this.isDestroyed) {
         console.error('Error toggling archive:', error);
-        showToast('❌ Gagal mengubah status arsip', 'error');
+        showToast('❌ Gagal mengubah status arsip', 'error', 5000);
       }
     } finally {
       this.isLoading = false;
@@ -749,12 +945,14 @@ class NotesApp {
   setupEventListeners() {
     try {
       this.removeEventListeners();
+
       if (this.elements.notesList) {
         this.elements.notesList.addEventListener(
           'click',
           this.handleButtonClick
         );
       }
+
       document.addEventListener('note-submit', this.handleNoteSubmit);
 
       if (this.elements.searchInput) {
@@ -775,7 +973,7 @@ class NotesApp {
 
       window.addEventListener('online', () => {
         if (!this.isDestroyed) {
-          showToast('🌐 Koneksi tersambung kembali', 'success', 2000);
+          showToast('🌐 Koneksi tersambung kembali', 'success', 3000);
           api.cache.clear();
           this.loadInitialData();
         }
@@ -783,7 +981,7 @@ class NotesApp {
 
       window.addEventListener('offline', () => {
         if (!this.isDestroyed) {
-          showToast('📱 Koneksi terputus', 'error', 3000);
+          showToast('📱 Koneksi terputus', 'error', 5000);
         }
       });
 
@@ -838,15 +1036,15 @@ class NotesApp {
     if (this.isDestroyed) return;
 
     showToast(
-      '❌ Terjadi kesalahan aplikasi. Halaman akan dimuat ulang.',
+      '❌ Terjadi kesalahan aplikasi. Halaman akan dimuat ulang dalam 5 detik.',
       'error',
-      5000
+      6000
     );
 
     this.safeSetTimeout(() => {
       this.destroy();
       window.location.reload();
-    }, 3000);
+    }, 5000);
   }
 
   destroy() {
@@ -863,7 +1061,9 @@ class NotesApp {
       this.intervals.forEach((id) => clearInterval(id));
       this.timeouts.clear();
       this.intervals.clear();
+
       this.removeEventListeners();
+
       this.elements = {};
       this.activeNotes = [];
       this.archivedNotes = [];
@@ -879,12 +1079,14 @@ class NotesApp {
   }
 }
 
+// Initialize app with enhanced loading
 document.addEventListener('DOMContentLoaded', () => {
   try {
     if (appInstance) {
       console.warn('App already initialized');
       return;
     }
+
     if ('requestIdleCallback' in window) {
       requestIdleCallback(() => {
         try {
@@ -920,19 +1122,28 @@ document.addEventListener('DOMContentLoaded', () => {
         text-align: center;
         color: #f56565;
         font-family: system-ui;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       ">
-        <div>
-          <h2>❌ Aplikasi Gagal Dimuat</h2>
-          <p>Terjadi kesalahan saat memuat aplikasi.</p>
+        <div style="
+          background: white;
+          padding: 40px;
+          border-radius: 16px;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+          max-width: 400px;
+        ">
+          <div style="font-size: 48px; margin-bottom: 16px;">❌</div>
+          <h2 style="margin-bottom: 16px; color: #2d3748;">Aplikasi Gagal Dimuat</h2>
+          <p style="margin-bottom: 24px; color: #4a5568;">Terjadi kesalahan saat memuat aplikasi catatan.</p>
           <button onclick="window.location.reload()" style="
-            background: #667eea;
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
+            padding: 12px 24px;
+            border-radius: 8px;
             cursor: pointer;
-            margin-top: 16px;
-          ">🔄 Muat Ulang</button>
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+          ">🔄 Muat Ulang Aplikasi</button>
         </div>
       </div>
     `;
