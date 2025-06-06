@@ -2,11 +2,9 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  /* Prevent text selection issues */
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Prevent horizontal overflow */
 html,
 body {
   max-width: 100vw;
@@ -21,16 +19,13 @@ body {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
   padding: 16px;
-  /* Prevent body expanding */
   width: 100%;
   position: relative;
-  /* Optimize rendering */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
-/* Prevent layout shifts */
 header {
   margin-bottom: 24px;
   max-width: 1400px;
@@ -47,21 +42,17 @@ main {
   gap: 24px;
   align-items: start;
   width: 100%;
-  /* Prevent grid overflow */
   min-width: 0;
 }
 
-/* Form Container - Prevent overflow */
 note-form {
   position: sticky;
   top: 16px;
   max-height: calc(100vh - 100px);
-  /* Prevent overflow */
   width: 100%;
   min-width: 0;
 }
 
-/* Notes Container - Fixed sizing */
 .notes-container {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 16px;
@@ -71,12 +62,9 @@ note-form {
   border: 1px solid rgba(255, 255, 255, 0.2);
   min-height: 500px;
   width: 100%;
-  /* Prevent content overflow */
   min-width: 0;
   overflow: hidden;
 }
-
-/* Tab Styling - Prevent overflow */
 .tabs {
   display: flex;
   gap: 6px;
@@ -84,7 +72,6 @@ note-form {
   padding: 3px;
   background: #f7fafc;
   border-radius: 10px;
-  /* Prevent tab overflow */
   min-width: 0;
   width: 100%;
 }
@@ -100,12 +87,10 @@ note-form {
   font-size: 13px;
   color: #4a5568;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  /* Prevent text overflow */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
-  /* Performance */
   will-change: transform;
 }
 
@@ -122,7 +107,6 @@ note-form {
   transform: translateY(-1px);
 }
 
-/* Search Container - Fixed sizing */
 .search-container {
   display: flex;
   align-items: center;
@@ -165,18 +149,15 @@ note-form {
   color: #a0aec0;
 }
 
-/* Notes Grid - Prevent overflow */
 .notes-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 16px;
   width: 100%;
-  /* Prevent grid overflow */
   overflow: visible;
   min-width: 0;
 }
 
-/* Button Styling - Fixed sizing */
 .btn-delete,
 .btn-archive {
   border: none;
@@ -189,7 +170,6 @@ note-form {
   text-transform: uppercase;
   letter-spacing: 0.3px;
   white-space: nowrap;
-  /* Prevent text overflow */
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: fit-content;
@@ -217,7 +197,6 @@ note-form {
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-/* Loading Indicator */
 .loading-overlay {
   position: fixed;
   top: 0;
@@ -268,7 +247,6 @@ note-form {
   color: white;
 }
 
-/* Toast Notifications - Fixed positioning */
 .toast-container {
   position: fixed;
   top: 20px;
@@ -276,7 +254,6 @@ note-form {
   z-index: 10000;
   max-width: 350px;
   pointer-events: none;
-  /* Prevent overflow */
   overflow: visible;
 }
 
@@ -294,7 +271,6 @@ note-form {
   font-weight: 500;
   font-size: 13px;
   pointer-events: auto;
-  /* Prevent text overflow */
   word-wrap: break-word;
   overflow-wrap: break-word;
   max-width: 100%;
@@ -328,7 +304,6 @@ note-form {
   animation: slideOut 0.2s ease forwards;
 }
 
-/* Empty State - Prevent overflow */
 .empty-message {
   grid-column: 1 / -1;
   text-align: center;
@@ -337,7 +312,6 @@ note-form {
   font-style: italic;
   font-size: 14px;
   width: 100%;
-  /* Prevent text overflow */
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
@@ -356,7 +330,6 @@ note-form {
   opacity: 0.6;
 }
 
-/* Error State - Fixed sizing */
 .error-state {
   grid-column: 1 / -1;
   text-align: center;
@@ -374,7 +347,6 @@ note-form {
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
-/* Inline loading - Fixed sizing */
 .inline-loading {
   animation: fadeIn 0.2s ease;
   width: 100%;
@@ -391,7 +363,6 @@ note-form {
   }
 }
 
-/* Responsive Design - Prevent overflow */
 @media screen and (max-width: 1200px) {
   main {
     grid-template-columns: 350px 1fr;
@@ -523,7 +494,6 @@ note-form {
   }
 }
 
-/* Performance optimizations */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -534,12 +504,10 @@ note-form {
   }
 }
 
-/* Prevent layout shifts */
 .notes-grid:empty {
   min-height: 200px;
 }
 
-/* Force GPU acceleration for smooth animations */
 .tab,
 .btn-delete,
 .btn-archive,
@@ -550,7 +518,6 @@ note-form {
   transform: translateZ(0);
 }
 
-/* Prevent text selection on UI elements */
 .tab,
 .btn-delete,
 .btn-archive {
@@ -560,7 +527,6 @@ note-form {
   -ms-user-select: none;
 }
 
-/* Ensure containers don't exceed viewport */
 main,
 .notes-container,
 .tabs,
@@ -568,13 +534,10 @@ main,
 .notes-grid {
   max-width: 100%;
 }
-
-/* Prevent horizontal scroll */
 body {
   overflow-x: hidden;
 }
 
-/* Fix for Safari */
 @supports (-webkit-appearance: none) {
   .search-input {
     -webkit-appearance: none;

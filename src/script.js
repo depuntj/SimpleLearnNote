@@ -1,8 +1,6 @@
-// Import CSS and components
 import './style.css';
 import './component.js';
 
-// Import utilities
 import {
   formatDate,
   showLoading,
@@ -11,18 +9,12 @@ import {
   debounce,
 } from './utils.js';
 
-// API Base URL
 const API_BASE_URL = 'https://notes-api.dicoding.dev/v2';
-
-// Prevent multiple app instances
 let appInstance = null;
 
-// API functions with better error handling and caching
 const api = {
   cache: new Map(),
   requestAbortController: null,
-
-  // Create abort controller for each request
   createAbortController() {
     if (this.requestAbortController) {
       this.requestAbortController.abort();
@@ -191,10 +183,8 @@ const api = {
   },
 };
 
-// Notes App Class with stability fixes
 class NotesApp {
   constructor() {
-    // Prevent multiple instances
     if (appInstance) {
       console.warn('NotesApp instance already exists');
       return appInstance;
@@ -206,15 +196,10 @@ class NotesApp {
     this.archivedNotes = [];
     this.isLoading = false;
     this.isDestroyed = false;
-
-    // Cache DOM elements
     this.elements = {};
-
-    // Track timeouts and intervals for cleanup
     this.timeouts = new Set();
     this.intervals = new Set();
 
-    // Bind methods to prevent context loss
     this.handleNoteSubmit = this.handleNoteSubmit.bind(this);
     this.handleSearch = this.handleSearch.bind(this);
     this.handleTabClick = this.handleTabClick.bind(this);
@@ -224,7 +209,6 @@ class NotesApp {
     this.init();
   }
 
-  // Safe timeout wrapper
   safeSetTimeout(callback, delay) {
     const timeoutId = setTimeout(() => {
       this.timeouts.delete(timeoutId);
@@ -236,7 +220,6 @@ class NotesApp {
     return timeoutId;
   }
 
-  // Safe interval wrapper
   safeSetInterval(callback, delay) {
     const intervalId = setInterval(() => {
       if (!this.isDestroyed) {
@@ -252,7 +235,6 @@ class NotesApp {
 
   async init() {
     try {
-      // Prevent initialization if already destroyed
       if (this.isDestroyed) return;
 
       hideLoading();
@@ -260,8 +242,6 @@ class NotesApp {
       this.cacheElements();
       this.setupEventListeners();
       this.updateTabCounts();
-
-      // Load data with error boundary
       this.safeSetTimeout(() => {
         if (!this.isDestroyed) {
           this.loadInitialData().catch((error) => {
@@ -285,8 +265,6 @@ class NotesApp {
         activeTab: document.getElementById('active-tab'),
         archivedTab: document.getElementById('archived-tab'),
       };
-
-      // Validate that elements exist
       if (!this.elements.notesList) {
         throw new Error('Required DOM elements not found');
       }
@@ -307,8 +285,6 @@ class NotesApp {
         api.getAllNotes(),
         api.getArchivedNotes(),
       ]);
-
-      // Check if component was destroyed during async operation
       if (this.isDestroyed) return;
 
       this.activeNotes =
@@ -335,7 +311,6 @@ class NotesApp {
     }
   }
 
-  // Safe render wrapper
   safeRender(renderFunction) {
     if (this.isDestroyed) return;
 
@@ -465,8 +440,6 @@ class NotesApp {
         this.renderEmptyState();
         return;
       }
-
-      // Limit rendering to prevent overwhelming the DOM
       const maxNotes = 50;
       const notesToRender = filteredNotes.slice(0, maxNotes);
 
@@ -480,8 +453,6 @@ class NotesApp {
       });
 
       this.elements.notesList.appendChild(fragment);
-
-      // Show message if there are more notes
       if (filteredNotes.length > maxNotes) {
         const moreMessage = document.createElement('div');
         moreMessage.style.cssText = `
@@ -572,7 +543,6 @@ class NotesApp {
     }
   }
 
-  // Event handlers with error boundaries
   handleNoteSubmit(event) {
     try {
       const { title, body } = event.detail;
@@ -778,21 +748,15 @@ class NotesApp {
 
   setupEventListeners() {
     try {
-      // Remove existing listeners first
       this.removeEventListeners();
-
-      // Event delegation for notes list
       if (this.elements.notesList) {
         this.elements.notesList.addEventListener(
           'click',
           this.handleButtonClick
         );
       }
-
-      // Note form submission
       document.addEventListener('note-submit', this.handleNoteSubmit);
 
-      // Search with debouncing
       if (this.elements.searchInput) {
         const debouncedSearch = debounce(this.handleSearch, 300);
         this.elements.searchInput.addEventListener('input', debouncedSearch);
@@ -805,12 +769,10 @@ class NotesApp {
         });
       }
 
-      // Tab switching
       this.elements.tabs.forEach((tab) => {
         tab.addEventListener('click', this.handleTabClick);
       });
 
-      // Network status monitoring
       window.addEventListener('online', () => {
         if (!this.isDestroyed) {
           showToast('🌐 Koneksi tersambung kembali', 'success', 2000);
@@ -825,12 +787,10 @@ class NotesApp {
         }
       });
 
-      // Cleanup on page unload
       window.addEventListener('beforeunload', () => {
         this.destroy();
       });
 
-      // Error boundary
       window.addEventListener('error', (event) => {
         console.error('Global error:', event.error);
         this.handleCriticalError(event.error);
@@ -875,17 +835,14 @@ class NotesApp {
   handleCriticalError(error) {
     console.error('Critical error in NotesApp:', error);
 
-    // Prevent infinite loops
     if (this.isDestroyed) return;
 
-    // Show user-friendly error message
     showToast(
       '❌ Terjadi kesalahan aplikasi. Halaman akan dimuat ulang.',
       'error',
       5000
     );
 
-    // Cleanup and reload after delay
     this.safeSetTimeout(() => {
       this.destroy();
       window.location.reload();
@@ -898,26 +855,19 @@ class NotesApp {
     this.isDestroyed = true;
 
     try {
-      // Abort any pending requests
       if (api.requestAbortController) {
         api.requestAbortController.abort();
       }
 
-      // Clear timeouts and intervals
       this.timeouts.forEach((id) => clearTimeout(id));
       this.intervals.forEach((id) => clearInterval(id));
       this.timeouts.clear();
       this.intervals.clear();
-
-      // Remove event listeners
       this.removeEventListeners();
-
-      // Clear references
       this.elements = {};
       this.activeNotes = [];
       this.archivedNotes = [];
 
-      // Reset singleton
       if (appInstance === this) {
         appInstance = null;
       }
@@ -929,16 +879,12 @@ class NotesApp {
   }
 }
 
-// Initialize app with error boundary
 document.addEventListener('DOMContentLoaded', () => {
   try {
-    // Prevent multiple initializations
     if (appInstance) {
       console.warn('App already initialized');
       return;
     }
-
-    // Initialize with delay to ensure DOM is ready
     if ('requestIdleCallback' in window) {
       requestIdleCallback(() => {
         try {
@@ -959,7 +905,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 100);
     }
 
-    // Performance monitoring
     if (window.performance && window.performance.now) {
       const loadTime = window.performance.now();
       console.log(`✨ App loaded in ${Math.round(loadTime)}ms`);

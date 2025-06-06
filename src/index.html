@@ -13,7 +13,6 @@
     <meta name="theme-color" content="#667eea" />
     <title>✨ Aplikasi Catatan - Kelola Catatan Anda</title>
 
-    <!-- Preload critical fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -22,7 +21,6 @@
     />
 
     <style>
-      /* Critical CSS for faster loading */
       body {
         font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         margin: 0;
@@ -36,7 +34,6 @@
         box-sizing: inherit;
       }
 
-      /* Loading animation */
       .loading-overlay {
         position: fixed;
         top: 0;
@@ -52,7 +49,6 @@
     </style>
   </head>
   <body>
-    <!-- Enhanced Loading Indicator -->
     <div id="loading-indicator" class="loading-overlay">
       <div class="loading-spinner">
         <div class="spinner"></div>
@@ -60,23 +56,17 @@
       </div>
     </div>
 
-    <!-- Main Header -->
     <header>
       <app-bar>
         <span slot="title">Aplikasi Catatan</span>
       </app-bar>
     </header>
 
-    <!-- Main Content -->
     <main>
-      <!-- Note Form Section -->
       <section class="form-section">
         <note-form></note-form>
       </section>
-
-      <!-- Notes Display Section -->
       <section class="notes-container">
-        <!-- Tab Navigation -->
         <nav class="tabs" role="tablist" aria-label="Navigasi Catatan">
           <button
             class="tab active"
@@ -100,7 +90,6 @@
           </button>
         </nav>
 
-        <!-- Search Section -->
         <div class="search-container">
           <span class="search-icon" aria-hidden="true">🔍</span>
           <input
@@ -112,7 +101,6 @@
           />
         </div>
 
-        <!-- Notes Grid -->
         <div
           class="notes-grid"
           id="notes-list"
@@ -123,7 +111,6 @@
       </section>
     </main>
 
-    <!-- Toast Notifications Container -->
     <div
       id="toast-container"
       class="toast-container"
@@ -132,16 +119,11 @@
       aria-label="Notifikasi"
     ></div>
 
-    <!-- Service Worker Registration (optional for PWA) -->
     <script>
-      // Simple performance optimization
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          // Register service worker if available
-        });
+        window.addEventListener('load', () => {});
       }
 
-      // Prevent FOUC (Flash of Unstyled Content)
       document.documentElement.style.visibility = 'hidden';
       window.addEventListener('DOMContentLoaded', () => {
         document.documentElement.style.visibility = 'visible';

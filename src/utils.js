@@ -1,11 +1,8 @@
-// Date formatting with improved error handling
 export function formatDate(dateString) {
   try {
     if (!dateString) return 'Tanggal tidak valid';
 
     const date = new Date(dateString);
-
-    // Check if date is valid
     if (isNaN(date.getTime())) {
       return 'Tanggal tidak valid';
     }
@@ -13,8 +10,6 @@ export function formatDate(dateString) {
     const now = new Date();
     const diffTime = Math.abs(now - date);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    // Format untuk bahasa Indonesia
     const options = {
       year: 'numeric',
       month: 'long',
@@ -27,7 +22,6 @@ export function formatDate(dateString) {
     try {
       const formattedDate = date.toLocaleDateString('id-ID', options);
 
-      // Add relative time for recent dates
       if (diffDays === 1) {
         return `Kemarin, ${date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
       } else if (diffDays === 0) {
@@ -46,7 +40,7 @@ export function formatDate(dateString) {
       return formattedDate;
     } catch (error) {
       console.error('Error formatting date:', error);
-      return date.toISOString().split('T')[0]; // Fallback to ISO date
+      return date.toISOString().split('T')[0];
     }
   } catch (error) {
     console.error('Error in formatDate:', error);
@@ -54,7 +48,6 @@ export function formatDate(dateString) {
   }
 }
 
-// Enhanced loading functions - Prevent memory leaks
 let loadingTimeouts = new Set();
 
 export function showLoading() {
@@ -65,7 +58,6 @@ export function showLoading() {
       loadingIndicator.style.display = 'flex';
       loadingIndicator.style.opacity = '1';
 
-      // Prevent body scroll when loading
       document.body.style.overflow = 'hidden';
     }
   } catch (error) {
@@ -84,8 +76,6 @@ export function hideLoading() {
           if (loadingIndicator) {
             loadingIndicator.classList.add('hidden');
             loadingIndicator.style.display = 'none';
-
-            // Restore body scroll
             document.body.style.overflow = '';
           }
         } catch (error) {
@@ -101,8 +91,6 @@ export function hideLoading() {
     console.error('Error hiding loading:', error);
   }
 }
-
-// Enhanced toast notifications with memory management
 let toastId = 0;
 let activeToasts = new Map();
 
@@ -113,8 +101,6 @@ export function showToast(message, type = 'success', duration = 4000) {
       console.warn('Toast container not found');
       return;
     }
-
-    // Limit number of active toasts to prevent memory issues
     if (activeToasts.size >= 5) {
       const oldestToast = activeToasts.keys().next().value;
       removeToast(oldestToast);
@@ -125,12 +111,10 @@ export function showToast(message, type = 'success', duration = 4000) {
     toast.className = `toast ${type}`;
     toast.id = `toast-${currentToastId}`;
 
-    // Sanitize message to prevent XSS
     const sanitizedMessage = message
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
 
-    // Create toast content with icon
     const icon = getToastIcon(type);
     toast.innerHTML = `
         <div style="display: flex; align-items: flex-start; gap: 10px; max-width: 100%;">
@@ -147,39 +131,30 @@ export function showToast(message, type = 'success', duration = 4000) {
         </div>
       `;
 
-    // Add click to dismiss
     toast.addEventListener('click', (event) => {
-      // Don't dismiss if clicking on close button
       if (event.target.tagName !== 'BUTTON') {
         removeToast(toast);
       }
     });
 
-    // Add to container and track
     toastContainer.appendChild(toast);
     activeToasts.set(toast, currentToastId);
 
-    // Auto remove after duration
     const timeoutId = setTimeout(() => {
       removeToast(toast);
     }, duration);
 
-    // Store timeout for cleanup
     toast.setAttribute('data-timeout', timeoutId);
 
-    // Haptic feedback on mobile devices
     if ('vibrate' in navigator && type === 'error') {
       try {
         navigator.vibrate(100);
-      } catch (error) {
-        // Ignore vibration errors
-      }
+      } catch (error) {}
     }
 
     return currentToastId;
   } catch (error) {
     console.error('Error showing toast:', error);
-    // Fallback to console log
     console.log(`Toast [${type}]: ${message}`);
   }
 }
@@ -207,13 +182,11 @@ function getToastTitle(type) {
 function removeToast(toast) {
   try {
     if (toast && toast.parentNode) {
-      // Clear timeout if exists
       const timeoutId = toast.getAttribute('data-timeout');
       if (timeoutId) {
         clearTimeout(parseInt(timeoutId));
       }
 
-      // Remove from tracking
       activeToasts.delete(toast);
 
       toast.classList.add('removing');
@@ -228,7 +201,6 @@ function removeToast(toast) {
         }
       }, 300);
 
-      // Clean up timeout reference
       setTimeout(() => clearTimeout(removeTimeoutId), 350);
     }
   } catch (error) {
@@ -236,7 +208,6 @@ function removeToast(toast) {
   }
 }
 
-// Enhanced debounce function with cleanup
 export function debounce(func, wait, immediate = false) {
   let timeout;
   let isDestroyed = false;
@@ -268,7 +239,6 @@ export function debounce(func, wait, immediate = false) {
     }
   };
 
-  // Add cleanup method
   debouncedFunction.cancel = () => {
     isDestroyed = true;
     clearTimeout(timeout);
@@ -278,7 +248,6 @@ export function debounce(func, wait, immediate = false) {
   return debouncedFunction;
 }
 
-// Throttle function for performance optimization
 export function throttle(func, limit) {
   let inThrottle;
   let isDestroyed = false;
@@ -299,7 +268,6 @@ export function throttle(func, limit) {
     }
   };
 
-  // Add cleanup method
   throttledFunction.cancel = () => {
     isDestroyed = true;
     inThrottle = false;
@@ -308,7 +276,6 @@ export function throttle(func, limit) {
   return throttledFunction;
 }
 
-// Local storage helpers with error handling
 export const storage = {
   set(key, value) {
     try {
@@ -367,17 +334,15 @@ export const storage = {
   },
 };
 
-// Network status checker
 export function isOnline() {
   try {
     return navigator.onLine;
   } catch (error) {
     console.error('Error checking online status:', error);
-    return true; // Assume online if check fails
+    return true;
   }
 }
 
-// Smooth scroll utility
 export function smoothScrollTo(element, options = {}) {
   try {
     if (!element) {
@@ -399,7 +364,6 @@ export function smoothScrollTo(element, options = {}) {
   }
 }
 
-// Copy to clipboard utility with fallback
 export async function copyToClipboard(text) {
   try {
     if (!text || typeof text !== 'string') {
@@ -412,7 +376,6 @@ export async function copyToClipboard(text) {
       showToast('📋 Teks berhasil disalin ke clipboard', 'success', 2000);
       return true;
     } else {
-      // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = text;
       textArea.style.cssText = `
@@ -425,7 +388,7 @@ export async function copyToClipboard(text) {
 
       document.body.appendChild(textArea);
       textArea.select();
-      textArea.setSelectionRange(0, 99999); // For mobile devices
+      textArea.setSelectionRange(0, 99999);
 
       const success = document.execCommand('copy');
       document.body.removeChild(textArea);
@@ -445,7 +408,6 @@ export async function copyToClipboard(text) {
   }
 }
 
-// Format text for display (truncate, etc.)
 export function truncateText(text, maxLength = 100) {
   try {
     if (!text || typeof text !== 'string') return '';
@@ -457,7 +419,6 @@ export function truncateText(text, maxLength = 100) {
   }
 }
 
-// Escape HTML to prevent XSS
 export function escapeHtml(text) {
   try {
     if (!text || typeof text !== 'string') return '';
@@ -471,7 +432,6 @@ export function escapeHtml(text) {
   }
 }
 
-// Performance monitoring with error handling
 export function measurePerformance(name, fn) {
   return async function (...args) {
     const start = performance.now();
@@ -488,14 +448,10 @@ export function measurePerformance(name, fn) {
   };
 }
 
-// Cleanup function for memory management
 export function cleanup() {
   try {
-    // Clear all active timeouts
     loadingTimeouts.forEach((id) => clearTimeout(id));
     loadingTimeouts.clear();
-
-    // Remove all active toasts
     activeToasts.forEach((id, toast) => {
       removeToast(toast);
     });
@@ -507,10 +463,7 @@ export function cleanup() {
   }
 }
 
-// Auto cleanup on page unload
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', cleanup);
-
-  // Also cleanup on page hide (for mobile)
   window.addEventListener('pagehide', cleanup);
 }

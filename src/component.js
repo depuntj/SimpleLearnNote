@@ -1,4 +1,3 @@
-// AppBar Web Component - Optimized
 class AppBar extends HTMLElement {
   constructor() {
     super();
@@ -12,7 +11,6 @@ class AppBar extends HTMLElement {
         :host {
           display: block;
           width: 100%;
-          /* Prevent clipping */
           overflow: visible;
         }
         
@@ -27,9 +25,7 @@ class AppBar extends HTMLElement {
           backdrop-filter: blur(10px);
           border: 1px solid rgba(255, 255, 255, 0.2);
           position: relative;
-          /* Prevent overflow clipping */
           overflow: visible;
-          /* Performance optimization */
           will-change: auto;
           backface-visibility: hidden;
         }
@@ -71,7 +67,6 @@ class AppBar extends HTMLElement {
           -webkit-text-fill-color: transparent;
           background-clip: text;
           position: relative;
-          /* Prevent text clipping */
           line-height: 1.2;
           word-break: keep-all;
         }
@@ -79,7 +74,6 @@ class AppBar extends HTMLElement {
         .icon {
           margin-right: 10px;
           font-size: 1.3rem;
-          /* Prevent emoji clipping */
           flex-shrink: 0;
         }
         
@@ -106,13 +100,10 @@ class AppBar extends HTMLElement {
     `;
   }
 }
-
-// Register AppBar component
 if (!customElements.get('app-bar')) {
   customElements.define('app-bar', AppBar);
 }
 
-// NoteItem Web Component - Performance Optimized
 class NoteItem extends HTMLElement {
   constructor() {
     super();
@@ -129,7 +120,6 @@ class NoteItem extends HTMLElement {
 
   attributeChangedCallback(name, oldValue, newValue) {
     if (oldValue !== newValue) {
-      // Use requestAnimationFrame for smooth updates
       requestAnimationFrame(() => this.render());
     }
   }
@@ -144,7 +134,6 @@ class NoteItem extends HTMLElement {
       <style>
         :host {
           display: block;
-          /* Prevent clipping */
           overflow: visible;
           contain: layout style;
         }
@@ -160,10 +149,8 @@ class NoteItem extends HTMLElement {
           grid-template-rows: auto auto 1fr auto;
           height: 100%;
           position: relative;
-          /* Prevent content overflow */
           overflow: visible;
           border: 1px solid rgba(0, 0, 0, 0.04);
-          /* Performance optimization */
           will-change: transform;
           backface-visibility: hidden;
         }
@@ -192,7 +179,6 @@ class NoteItem extends HTMLElement {
           color: #2d3748;
           margin-top: 6px;
           line-height: 1.3;
-          /* Prevent text overflow */
           word-wrap: break-word;
           overflow-wrap: break-word;
           hyphens: auto;
@@ -206,7 +192,6 @@ class NoteItem extends HTMLElement {
           display: flex;
           align-items: center;
           gap: 4px;
-          /* Prevent shrinking */
           flex-shrink: 0;
         }
 
@@ -222,11 +207,9 @@ class NoteItem extends HTMLElement {
           line-height: 1.5;
           font-size: 0.9rem;
           flex-grow: 1;
-          /* Prevent text overflow */
           word-wrap: break-word;
           overflow-wrap: break-word;
           hyphens: auto;
-          /* Limit height to prevent extreme stretching */
           max-height: 120px;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -242,7 +225,6 @@ class NoteItem extends HTMLElement {
           gap: 8px;
           padding-top: 12px;
           border-top: 1px solid #e2e8f0;
-          /* Prevent content from affecting layout */
           flex-shrink: 0;
         }
 
@@ -256,7 +238,6 @@ class NoteItem extends HTMLElement {
           font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.3px;
-          /* Prevent clipping */
           z-index: 1;
         }
 
@@ -313,12 +294,9 @@ class NoteItem extends HTMLElement {
   }
 }
 
-// Register NoteItem component
 if (!customElements.get('note-item')) {
   customElements.define('note-item', NoteItem);
 }
-
-// NoteForm Web Component - Performance Optimized
 class NoteForm extends HTMLElement {
   constructor() {
     super();
@@ -327,7 +305,6 @@ class NoteForm extends HTMLElement {
 
   connectedCallback() {
     this.render();
-    // Use requestAnimationFrame for smooth initialization
     requestAnimationFrame(() => this.setupEventListeners());
   }
 
@@ -338,7 +315,6 @@ class NoteForm extends HTMLElement {
     const charCounter = this.shadowRoot.querySelector('.char-counter');
     const submitButton = this.shadowRoot.querySelector('button[type="submit"]');
 
-    // Debounce input validation for performance
     let titleTimeout, bodyTimeout;
 
     titleInput.addEventListener('input', () => {
@@ -348,7 +324,6 @@ class NoteForm extends HTMLElement {
         const length = titleInput.value.length;
         charCounter.textContent = `${length}/50`;
 
-        // Update counter color
         if (length > 40) {
           charCounter.style.color = '#f56565';
         } else if (length > 30) {
@@ -450,7 +425,6 @@ class NoteForm extends HTMLElement {
       <style>
         :host {
           display: block;
-          /* Prevent clipping */
           overflow: visible;
         }
         
@@ -463,9 +437,7 @@ class NoteForm extends HTMLElement {
           border: 1px solid rgba(255, 255, 255, 0.2);
           color: #2d3748;
           position: relative;
-          /* Prevent overflow issues */
           overflow: visible;
-          /* Performance optimization */
           will-change: auto;
           backface-visibility: hidden;
         }
@@ -490,7 +462,6 @@ class NoteForm extends HTMLElement {
           display: flex;
           align-items: center;
           gap: 8px;
-          /* Prevent text clipping */
           line-height: 1.2;
         }
 
@@ -502,7 +473,6 @@ class NoteForm extends HTMLElement {
         .form-group {
           margin-bottom: 20px;
           position: relative;
-          /* Prevent content clipping */
           overflow: visible;
         }
         
@@ -524,7 +494,6 @@ class NoteForm extends HTMLElement {
           color: #2d3748;
           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
           font-family: inherit;
-          /* Prevent clipping */
           box-sizing: border-box;
           min-height: 0;
         }
@@ -586,7 +555,6 @@ class NoteForm extends HTMLElement {
           font-weight: 600;
           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
           position: relative;
-          /* Prevent clipping */
           overflow: visible;
           width: 100%;
           display: flex;
@@ -594,7 +562,6 @@ class NoteForm extends HTMLElement {
           justify-content: center;
           gap: 6px;
           box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-          /* Performance */
           will-change: transform;
           backface-visibility: hidden;
         }
@@ -690,7 +657,6 @@ class NoteForm extends HTMLElement {
   }
 }
 
-// Register NoteForm component
 if (!customElements.get('note-form')) {
   customElements.define('note-form', NoteForm);
 }
