@@ -2,50 +2,150 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Aplikasi Catatan</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=yes"
+    />
+    <meta
+      name="description"
+      content="Aplikasi Catatan - Buat dan kelola catatan Anda dengan mudah"
+    />
+    <meta name="theme-color" content="#667eea" />
+    <title>✨ Aplikasi Catatan - Kelola Catatan Anda</title>
+
+    <!-- Preload critical fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* Critical CSS for faster loading */
+      body {
+        font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: inherit;
+      }
+
+      /* Loading animation */
+      .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+      }
+    </style>
   </head>
   <body>
+    <!-- Enhanced Loading Indicator -->
     <div id="loading-indicator" class="loading-overlay">
       <div class="loading-spinner">
         <div class="spinner"></div>
-        <p>Memuat catatan...</p>
+        <p>Memuat catatan Anda...</p>
       </div>
     </div>
 
+    <!-- Main Header -->
     <header>
       <app-bar>
         <span slot="title">Aplikasi Catatan</span>
       </app-bar>
     </header>
 
+    <!-- Main Content -->
     <main>
-      <note-form></note-form>
+      <!-- Note Form Section -->
+      <section class="form-section">
+        <note-form></note-form>
+      </section>
 
+      <!-- Notes Display Section -->
       <section class="notes-container">
-        <div class="tabs">
-          <button class="tab active" id="active-tab" data-tab="active">
-            Catatan Aktif
+        <!-- Tab Navigation -->
+        <nav class="tabs" role="tablist" aria-label="Navigasi Catatan">
+          <button
+            class="tab active"
+            id="active-tab"
+            data-tab="active"
+            role="tab"
+            aria-selected="true"
+            aria-controls="notes-list"
+          >
+            📝 Catatan Aktif
           </button>
-          <button class="tab" id="archived-tab" data-tab="archived">
-            Arsip
+          <button
+            class="tab"
+            id="archived-tab"
+            data-tab="archived"
+            role="tab"
+            aria-selected="false"
+            aria-controls="notes-list"
+          >
+            📚 Arsip
           </button>
-        </div>
+        </nav>
 
+        <!-- Search Section -->
         <div class="search-container">
-          <span class="search-icon">🔍</span>
+          <span class="search-icon" aria-hidden="true">🔍</span>
           <input
             type="text"
             class="search-input"
             id="search-notes"
-            placeholder="Cari catatan..."
+            placeholder="Cari catatan berdasarkan judul atau isi..."
+            aria-label="Cari catatan"
           />
         </div>
 
-        <div class="notes-grid" id="notes-list"></div>
+        <!-- Notes Grid -->
+        <div
+          class="notes-grid"
+          id="notes-list"
+          role="main"
+          aria-live="polite"
+          aria-label="Daftar catatan"
+        ></div>
       </section>
     </main>
 
-    <div id="toast-container" class="toast-container"></div>
+    <!-- Toast Notifications Container -->
+    <div
+      id="toast-container"
+      class="toast-container"
+      role="status"
+      aria-live="polite"
+      aria-label="Notifikasi"
+    ></div>
+
+    <!-- Service Worker Registration (optional for PWA) -->
+    <script>
+      // Simple performance optimization
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          // Register service worker if available
+        });
+      }
+
+      // Prevent FOUC (Flash of Unstyled Content)
+      document.documentElement.style.visibility = 'hidden';
+      window.addEventListener('DOMContentLoaded', () => {
+        document.documentElement.style.visibility = 'visible';
+      });
+    </script>
   </body>
 </html>
