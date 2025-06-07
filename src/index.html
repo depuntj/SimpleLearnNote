@@ -8,9 +8,16 @@
     />
     <meta
       name="description"
-      content="Aplikasi Catatan - Buat dan kelola catatan Anda dengan mudah"
+      content="Aplikasi Catatan - Buat dan kelola catatan Anda dengan mudah menggunakan RESTful API"
     />
+    <meta
+      name="keywords"
+      content="catatan, notes, aplikasi, web app, javascript"
+    />
+    <meta name="author" content="Notes App" />
     <meta name="theme-color" content="#667eea" />
+    <meta name="robots" content="index, follow" />
+
     <title>✨ Aplikasi Catatan - Kelola Catatan Anda</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -21,34 +28,96 @@
     />
 
     <style>
+      * {
+        box-sizing: border-box;
+      }
+
       body {
         font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         margin: 0;
         padding: 0;
-        box-sizing: border-box;
-      }
-
-      *,
-      *::before,
-      *::after {
-        box-sizing: inherit;
+        overflow-x: hidden;
       }
 
       .loading-overlay {
         position: fixed;
         top: 0;
         left: 0;
-        width: 100%;
-        height: 100%;
+        width: 100vw;
+        height: 100vh;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         display: flex;
         justify-content: center;
         align-items: center;
         z-index: 9999;
+        opacity: 1;
+        transition: opacity 0.3s ease;
+      }
+
+      .loading-overlay.hidden {
+        opacity: 0;
+        pointer-events: none;
+        display: none !important;
+      }
+
+      .loading-spinner {
+        text-align: center;
+        color: white;
+      }
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top: 3px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 16px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .loading-spinner p {
+        font-size: 14px;
+        font-weight: 500;
+        margin: 0;
+      }
+
+      .preload-hidden {
+        visibility: hidden;
+      }
+
+      .error-fallback {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+      }
+
+      .error-content {
+        background: white;
+        padding: 40px;
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        max-width: 400px;
+        text-align: center;
       }
     </style>
   </head>
-  <body>
+  <body class="preload-hidden">
     <div id="loading-indicator" class="loading-overlay">
       <div class="loading-spinner">
         <div class="spinner"></div>
@@ -56,60 +125,91 @@
       </div>
     </div>
 
-    <header>
-      <app-bar>
-        <span slot="title">Aplikasi Catatan</span>
-      </app-bar>
-    </header>
+    <div id="error-fallback" class="error-fallback">
+      <div class="error-content">
+        <div style="font-size: 48px; margin-bottom: 16px">❌</div>
+        <h2 style="margin-bottom: 16px; color: #2d3748">
+          Aplikasi Gagal Dimuat
+        </h2>
+        <p style="margin-bottom: 24px; color: #4a5568">
+          Terjadi kesalahan saat memuat aplikasi catatan.
+        </p>
+        <button
+          onclick="window.location.reload()"
+          style="
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+          "
+        >
+          🔄 Muat Ulang Aplikasi
+        </button>
+      </div>
+    </div>
 
-    <main>
-      <section class="form-section">
-        <note-form></note-form>
-      </section>
-      <section class="notes-container">
-        <nav class="tabs" role="tablist" aria-label="Navigasi Catatan">
-          <button
-            class="tab active"
-            id="active-tab"
-            data-tab="active"
-            role="tab"
-            aria-selected="true"
-            aria-controls="notes-list"
-          >
-            📝 Catatan Aktif
-          </button>
-          <button
-            class="tab"
-            id="archived-tab"
-            data-tab="archived"
-            role="tab"
-            aria-selected="false"
-            aria-controls="notes-list"
-          >
-            📚 Arsip
-          </button>
-        </nav>
+    <div id="app-container">
+      <header>
+        <app-bar>
+          <span slot="title">Aplikasi Catatan</span>
+        </app-bar>
+      </header>
 
-        <div class="search-container">
-          <span class="search-icon" aria-hidden="true">🔍</span>
-          <input
-            type="text"
-            class="search-input"
-            id="search-notes"
-            placeholder="Cari catatan berdasarkan judul atau isi..."
-            aria-label="Cari catatan"
-          />
-        </div>
+      <main>
+        <section class="form-section">
+          <note-form></note-form>
+        </section>
 
-        <div
-          class="notes-grid"
-          id="notes-list"
-          role="main"
-          aria-live="polite"
-          aria-label="Daftar catatan"
-        ></div>
-      </section>
-    </main>
+        <section class="notes-container">
+          <nav class="tabs" role="tablist" aria-label="Navigasi Catatan">
+            <button
+              class="tab active"
+              id="active-tab"
+              data-tab="active"
+              role="tab"
+              aria-selected="true"
+              aria-controls="notes-list"
+            >
+              📝 Catatan Aktif
+            </button>
+            <button
+              class="tab"
+              id="archived-tab"
+              data-tab="archived"
+              role="tab"
+              aria-selected="false"
+              aria-controls="notes-list"
+            >
+              📚 Arsip
+            </button>
+          </nav>
+
+          <div class="search-container">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <input
+              type="text"
+              class="search-input"
+              id="search-notes"
+              placeholder="Cari catatan berdasarkan judul atau isi..."
+              aria-label="Cari catatan"
+              autocomplete="off"
+            />
+          </div>
+
+          <div
+            class="notes-grid"
+            id="notes-list"
+            role="main"
+            aria-live="polite"
+            aria-label="Daftar catatan"
+          ></div>
+        </section>
+      </main>
+    </div>
 
     <div
       id="toast-container"
@@ -120,14 +220,25 @@
     ></div>
 
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {});
-      }
-
-      document.documentElement.style.visibility = 'hidden';
-      window.addEventListener('DOMContentLoaded', () => {
-        document.documentElement.style.visibility = 'visible';
+      document.addEventListener('DOMContentLoaded', function () {
+        document.body.classList.remove('preload-hidden');
       });
+
+      window.addEventListener('error', function (event) {
+        console.error('Critical JavaScript error:', event.error);
+        document.getElementById('error-fallback').style.display = 'flex';
+        document.getElementById('loading-indicator').style.display = 'none';
+      });
+
+      window.addEventListener('unhandledrejection', function (event) {
+        console.error('Unhandled promise rejection:', event.reason);
+      });
+
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          console.log('Service Worker support detected');
+        });
+      }
     </script>
   </body>
 </html>

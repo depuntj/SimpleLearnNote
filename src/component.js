@@ -2,21 +2,37 @@ class AppBar extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
+  }
+
+  connectedCallback() {
     this.render();
   }
 
+  static get observedAttributes() {
+    return ['title', 'subtitle'];
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue !== newValue) {
+      this.render();
+    }
+  }
+
   render() {
+    const title = this.getAttribute('title') || 'Aplikasi Catatan';
+    const subtitle = this.getAttribute('subtitle') || '';
+
     this.shadowRoot.innerHTML = `
       <style>
         :host {
           display: block;
           width: 100%;
-          overflow: visible;
         }
         
         .app-bar {
           display: flex;
           align-items: center;
+          justify-content: space-between;
           padding: 20px 24px;
           background: rgba(255, 255, 255, 0.95);
           color: #2d3748;
@@ -25,9 +41,7 @@ class AppBar extends HTMLElement {
           backdrop-filter: blur(10px);
           border: 1px solid rgba(255, 255, 255, 0.2);
           position: relative;
-          overflow: visible;
-          will-change: auto;
-          backface-visibility: hidden;
+          overflow: hidden;
         }
         
         .app-bar::before {
@@ -58,6 +72,22 @@ class AppBar extends HTMLElement {
           border-radius: 12px 12px 0 0;
         }
         
+        .title-section {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        
+        .icon {
+          font-size: 1.3rem;
+          animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+        
         h1 {
           margin: 0;
           font-size: 1.5rem;
@@ -66,15 +96,38 @@ class AppBar extends HTMLElement {
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
-          position: relative;
           line-height: 1.2;
-          word-break: keep-all;
         }
-
-        .icon {
-          margin-right: 10px;
-          font-size: 1.3rem;
-          flex-shrink: 0;
+        
+        .subtitle {
+          font-size: 0.9rem;
+          color: #718096;
+          margin-top: 2px;
+        }
+        
+        .status-indicator {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          background: rgba(102, 126, 234, 0.1);
+          border-radius: 20px;
+          font-size: 0.8rem;
+          color: #667eea;
+          font-weight: 600;
+        }
+        
+        .status-dot {
+          width: 8px;
+          height: 8px;
+          background: #48bb78;
+          border-radius: 50%;
+          animation: blink 2s infinite;
+        }
+        
+        @keyframes blink {
+          0%, 50% { opacity: 1; }
+          51%, 100% { opacity: 0.3; }
         }
         
         @media (max-width: 768px) {
@@ -88,20 +141,30 @@ class AppBar extends HTMLElement {
           
           .icon {
             font-size: 1.2rem;
-            margin-right: 8px;
+          }
+          
+          .status-indicator {
+            padding: 4px 8px;
+            font-size: 0.75rem;
           }
         }
       </style>
       
       <div class="app-bar">
-        <span class="icon">📝</span>
-        <h1><slot name="title">Aplikasi Catatan</slot></h1>
+        <div class="title-section">
+          <span class="icon">📝</span>
+          <div>
+            <h1><slot name="title">${title}</slot></h1>
+            ${subtitle ? `<div class="subtitle">${subtitle}</div>` : ''}
+          </div>
+        </div>
+        <div class="status-indicator">
+          <div class="status-dot"></div>
+          <span>Online</span>
+        </div>
       </div>
     `;
   }
-}
-if (!customElements.get('app-bar')) {
-  customElements.define('app-bar', AppBar);
 }
 
 class NoteItem extends HTMLElement {
@@ -111,7 +174,7 @@ class NoteItem extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ['title', 'date', 'body', 'archived'];
+    return ['title', 'date', 'body', 'archived', 'note-id'];
   }
 
   connectedCallback() {
@@ -120,22 +183,38 @@ class NoteItem extends HTMLElement {
 
   attributeChangedCallback(name, oldValue, newValue) {
     if (oldValue !== newValue) {
-      requestAnimationFrame(() => this.render());
+      this.render();
     }
   }
 
+  get noteId() {
+    return this.getAttribute('note-id');
+  }
+
+  set noteId(value) {
+    this.setAttribute('note-id', value);
+  }
+
+  get isArchived() {
+    return this.getAttribute('archived') === 'true';
+  }
+
+  set isArchived(value) {
+    this.setAttribute('archived', value.toString());
+  }
+
   render() {
-    const title = this.getAttribute('title') || '';
+    const title = this.getAttribute('title') || 'Tanpa Judul';
     const date = this.getAttribute('date') || '';
     const body = this.getAttribute('body') || '';
     const archived = this.getAttribute('archived') === 'true';
+    const noteId = this.getAttribute('note-id') || '';
 
     this.shadowRoot.innerHTML = `
       <style>
         :host {
           display: block;
-          overflow: visible;
-          contain: layout style;
+          height: 100%;
         }
         
         .note-card {
@@ -149,10 +228,9 @@ class NoteItem extends HTMLElement {
           grid-template-rows: auto auto 1fr auto;
           height: 100%;
           position: relative;
-          overflow: visible;
+          overflow: hidden;
           border: 1px solid rgba(0, 0, 0, 0.04);
-          will-change: transform;
-          backface-visibility: hidden;
+          cursor: pointer;
         }
         
         .note-card::before {
@@ -172,16 +250,47 @@ class NoteItem extends HTMLElement {
           border-color: rgba(102, 126, 234, 0.1);
         }
         
+        .note-card:active {
+          transform: translateY(-1px);
+        }
+        
+        .note-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 8px;
+        }
+        
         .note-title {
           font-size: 1.1rem;
           font-weight: 700;
-          margin-bottom: 6px;
           color: #2d3748;
-          margin-top: 6px;
           line-height: 1.3;
           word-wrap: break-word;
           overflow-wrap: break-word;
-          hyphens: auto;
+          margin: 0;
+          flex: 1;
+          margin-right: 8px;
+        }
+        
+        .status-badge {
+          padding: 3px 8px;
+          border-radius: 12px;
+          font-size: 0.7rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+          flex-shrink: 0;
+        }
+
+        .status-badge.active {
+          background: #c6f6d5;
+          color: #276749;
+        }
+
+        .status-badge.archived {
+          background: #fed7d7;
+          color: #c53030;
         }
         
         .note-date {
@@ -192,7 +301,6 @@ class NoteItem extends HTMLElement {
           display: flex;
           align-items: center;
           gap: 4px;
-          flex-shrink: 0;
         }
 
         .note-date::before {
@@ -209,7 +317,6 @@ class NoteItem extends HTMLElement {
           flex-grow: 1;
           word-wrap: break-word;
           overflow-wrap: break-word;
-          hyphens: auto;
           max-height: 120px;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -219,38 +326,22 @@ class NoteItem extends HTMLElement {
         }
         
         .note-actions {
-          margin-top: auto;
           display: flex;
           justify-content: flex-end;
           gap: 8px;
           padding-top: 12px;
           border-top: 1px solid #e2e8f0;
-          flex-shrink: 0;
+          margin-top: auto;
         }
 
-        .status-badge {
-          position: absolute;
-          top: 12px;
-          right: 12px;
-          padding: 3px 6px;
-          border-radius: 6px;
-          font-size: 0.7rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.3px;
-          z-index: 1;
+        ::slotted(button) {
+          transition: all 0.2s ease;
         }
 
-        .status-badge.active {
-          background: #c6f6d5;
-          color: #276749;
+        ::slotted(button:hover) {
+          transform: translateY(-1px);
         }
-
-        .status-badge.archived {
-          background: #fed7d7;
-          color: #c53030;
-        }
-
+        
         @media (max-width: 768px) {
           .note-card {
             padding: 16px;
@@ -271,19 +362,19 @@ class NoteItem extends HTMLElement {
           }
           
           .status-badge {
-            top: 10px;
-            right: 10px;
-            padding: 2px 5px;
+            padding: 2px 6px;
             font-size: 0.65rem;
           }
         }
       </style>
       
-      <div class="note-card">
-        <div class="status-badge ${archived ? 'archived' : 'active'}">
-          ${archived ? 'Arsip' : 'Aktif'}
+      <div class="note-card" data-note-id="${noteId}">
+        <div class="note-header">
+          <h3 class="note-title">${title}</h3>
+          <div class="status-badge ${archived ? 'archived' : 'active'}">
+            ${archived ? 'Arsip' : 'Aktif'}
+          </div>
         </div>
-        <h3 class="note-title">${title}</h3>
         <p class="note-date">${date}</p>
         <p class="note-body">${body}</p>
         <div class="note-actions">
@@ -294,18 +385,34 @@ class NoteItem extends HTMLElement {
   }
 }
 
-if (!customElements.get('note-item')) {
-  customElements.define('note-item', NoteItem);
-}
 class NoteForm extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
   }
 
+  static get observedAttributes() {
+    return ['max-title-length', 'placeholder-title', 'placeholder-body'];
+  }
+
   connectedCallback() {
     this.render();
-    requestAnimationFrame(() => this.setupEventListeners());
+    this.setupEventListeners();
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue !== newValue) {
+      this.render();
+      this.setupEventListeners();
+    }
+  }
+
+  get maxTitleLength() {
+    return parseInt(this.getAttribute('max-title-length')) || 50;
+  }
+
+  set maxTitleLength(value) {
+    this.setAttribute('max-title-length', value.toString());
   }
 
   setupEventListeners() {
@@ -315,22 +422,15 @@ class NoteForm extends HTMLElement {
     const charCounter = this.shadowRoot.querySelector('.char-counter');
     const submitButton = this.shadowRoot.querySelector('button[type="submit"]');
 
+    if (!form || !titleInput || !bodyInput) return;
+
     let titleTimeout, bodyTimeout;
 
     titleInput.addEventListener('input', () => {
       clearTimeout(titleTimeout);
       titleTimeout = setTimeout(() => {
         this.validateTitle(titleInput);
-        const length = titleInput.value.length;
-        charCounter.textContent = `${length}/50`;
-
-        if (length > 40) {
-          charCounter.style.color = '#f56565';
-        } else if (length > 30) {
-          charCounter.style.color = '#ed8936';
-        } else {
-          charCounter.style.color = '#718096';
-        }
+        this.updateCharCounter(titleInput, charCounter);
       }, 150);
     });
 
@@ -364,8 +464,7 @@ class NoteForm extends HTMLElement {
           titleInput.value = '';
           bodyInput.value = '';
           titleInput.focus();
-          charCounter.textContent = '0/50';
-          charCounter.style.color = '#718096';
+          this.updateCharCounter(titleInput, charCounter);
           submitButton.disabled = false;
           submitButton.innerHTML = '✨ Simpan Catatan';
 
@@ -376,9 +475,26 @@ class NoteForm extends HTMLElement {
     });
   }
 
+  updateCharCounter(input, counter) {
+    if (!counter) return;
+
+    const length = input.value.length;
+    const maxLength = this.maxTitleLength;
+    counter.textContent = `${length}/${maxLength}`;
+
+    if (length > maxLength * 0.8) {
+      counter.style.color = '#f56565';
+    } else if (length > maxLength * 0.6) {
+      counter.style.color = '#ed8936';
+    } else {
+      counter.style.color = '#718096';
+    }
+  }
+
   validateTitle(input) {
     const value = input.value.trim();
     const errorElement = input.parentElement.querySelector('.error-message');
+    const maxLength = this.maxTitleLength;
 
     if (value === '') {
       errorElement.textContent = '⚠️ Judul catatan tidak boleh kosong';
@@ -388,8 +504,8 @@ class NoteForm extends HTMLElement {
       errorElement.textContent = '⚠️ Judul catatan minimal 3 karakter';
       input.classList.add('invalid');
       return false;
-    } else if (value.length > 50) {
-      errorElement.textContent = '⚠️ Judul catatan maksimal 50 karakter';
+    } else if (value.length > maxLength) {
+      errorElement.textContent = `⚠️ Judul catatan maksimal ${maxLength} karakter`;
       input.classList.add('invalid');
       return false;
     } else {
@@ -421,11 +537,18 @@ class NoteForm extends HTMLElement {
   }
 
   render() {
+    const maxTitleLength = this.maxTitleLength;
+    const placeholderTitle =
+      this.getAttribute('placeholder-title') ||
+      'Masukkan judul catatan yang menarik...';
+    const placeholderBody =
+      this.getAttribute('placeholder-body') ||
+      'Tulis isi catatan Anda di sini...';
+
     this.shadowRoot.innerHTML = `
       <style>
         :host {
           display: block;
-          overflow: visible;
         }
         
         .form-container {
@@ -437,9 +560,6 @@ class NoteForm extends HTMLElement {
           border: 1px solid rgba(255, 255, 255, 0.2);
           color: #2d3748;
           position: relative;
-          overflow: visible;
-          will-change: auto;
-          backface-visibility: hidden;
         }
         
         .form-container::before {
@@ -473,7 +593,6 @@ class NoteForm extends HTMLElement {
         .form-group {
           margin-bottom: 20px;
           position: relative;
-          overflow: visible;
         }
         
         label {
@@ -495,7 +614,6 @@ class NoteForm extends HTMLElement {
           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
           font-family: inherit;
           box-sizing: border-box;
-          min-height: 0;
         }
         
         input:focus, textarea:focus {
@@ -555,15 +673,12 @@ class NoteForm extends HTMLElement {
           font-weight: 600;
           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
           position: relative;
-          overflow: visible;
           width: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 6px;
           box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-          will-change: transform;
-          backface-visibility: hidden;
         }
         
         button:hover:not(:disabled) {
@@ -627,14 +742,15 @@ class NoteForm extends HTMLElement {
         <form id="note-form">
           <div class="form-group">
             <label for="title">Judul Catatan</label>
-            <span class="char-counter">0/50</span>
+            <span class="char-counter">0/${maxTitleLength}</span>
             <input 
               type="text" 
               id="title" 
               name="title" 
-              placeholder="Masukkan judul catatan yang menarik..." 
-              maxlength="50"
+              placeholder="${placeholderTitle}" 
+              maxlength="${maxTitleLength}"
               autocomplete="off"
+              required
             >
             <p class="error-message"></p>
           </div>
@@ -644,8 +760,9 @@ class NoteForm extends HTMLElement {
             <textarea 
               id="body" 
               name="body" 
-              placeholder="Tulis isi catatan Anda di sini..." 
+              placeholder="${placeholderBody}" 
               rows="5"
+              required
             ></textarea>
             <p class="error-message"></p>
           </div>
@@ -655,6 +772,14 @@ class NoteForm extends HTMLElement {
       </div>
     `;
   }
+}
+
+if (!customElements.get('app-bar')) {
+  customElements.define('app-bar', AppBar);
+}
+
+if (!customElements.get('note-item')) {
+  customElements.define('note-item', NoteItem);
 }
 
 if (!customElements.get('note-form')) {
